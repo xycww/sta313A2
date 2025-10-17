@@ -3,3 +3,4 @@
 .RData
 .Ruserdata
 data/00-raw_data/*.csv
+data/00-raw_data/*.csv
