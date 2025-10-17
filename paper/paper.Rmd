@@ -254,7 +254,58 @@ ggplot(plot_df, aes(x = group, y = gap, fill = Gender)) +
         axis.text.x = element_text(angle = 15, hjust = 1))
 
 ```
-`
+```{r}
+library(tidyverse)
+library(scales)
+
+# Restrict to ages 25–44 and build a child-status flag
+df_25_44 <- clean_data %>%
+  mutate(
+    Gender = recode(as.character(Gender), `1`="Women", `2`="Men"),
+    ChildStatus = case_when(
+      PKIDS == 1 ~ "Has children",
+      PKIDS == 0 ~ "No children",
+      TRUE       ~ NA_character_
+    )
+  ) %>%
+  filter(
+    AGEGRP %in% 9:12,          # 25–29, 30–34, 35–39, 40–44
+    !is.na(Wages),
+    Gender %in% c("Women","Men"),
+    !is.na(ChildStatus)
+  )
+
+# Median wages by ChildStatus x Gender, then compute gap = (Men - Women) / Men
+gap_child <- df_25_44 %>%
+  group_by(ChildStatus, Gender) %>%
+  summarise(med = median(Wages, na.rm = TRUE), .groups = "drop") %>%
+  tidyr::pivot_wider(names_from = Gender, values_from = med) %>%
+  # keep only statuses where we have both genders
+  filter(!is.na(Men), !is.na(Women)) %>%
+  mutate(
+    gap = (Men - Women) / Men,
+    ChildStatus = factor(ChildStatus, levels = c("No children","Has children"))
+  ) %>%
+  arrange(ChildStatus)
+
+# Plot: two bars = with kids vs without kids
+ggplot(gap_child, aes(x = ChildStatus, y = gap, fill = ChildStatus)) +
+  geom_col(width = 0.6, color = "white", show.legend = FALSE) +
+  geom_text(aes(label = label_percent(accuracy = 0.1)(gap)),
+            vjust = -0.35, size = 3.2) +
+  scale_fill_manual(values = c("No children" = "#00BFC4", "Has children" = "#C77CFF")) +
+  scale_y_continuous(labels = label_percent(accuracy = 1),
+                     expand = expansion(mult = c(0.02, 0.08))) +
+  labs(
+    title = "Gender pay gap (ages 25–44): with vs without children",
+    subtitle = "Gap = (Men median − Women median) / Men median, using medians within each group",
+    x = NULL, y = "Gap percentage"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(panel.grid.minor = element_blank())
+
+```
+
 ```{r}
 another <- read_parquet("/Users/hxw/sta313A2/data/00-raw_data/raw_census_data.parquet")
 ```

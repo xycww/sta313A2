@@ -10,7 +10,7 @@ data <- read_parquet("./data/00-raw_data/raw_census_data.parquet")
 data <- read_parquet("./data/00-raw_data/raw_census_data.parquet")
 
 clean_data <- data %>%
-  select(AGEGRP, Gender, HDGREE, FPTWK, VISMIN, Wages, COW, WKSWRK, NAICS) %>%
+  select(AGEGRP, Gender, HDGREE, FPTWK, VISMIN, Wages, COW, WKSWRK, NAICS, PKIDS, LFACT) %>%
   filter(
     AGEGRP %in% 7:16,
     FPTWK == 1,
@@ -18,8 +18,10 @@ clean_data <- data %>%
     WKSWRK == 6,
     !Wages %in% c(88888888, 99999999),
     !HDGREE %in% c(88, 99),
+    !LFACT %in% c(88, 99),
     !VISMIN %in% c(12, 13, 88),
-    !NAICS %in% c(888, 999)
+    !NAICS %in% c(888, 999),
+    !PKIDS %in% c(8, 9)
   ) %>%
   mutate(
     Edu3 = case_when(
@@ -29,8 +31,18 @@ clean_data <- data %>%
       TRUE ~ NA_character_
     ),
     Edu3 = factor(Edu3, levels = c("HS or less","Non-degree postsec","BA or higher")),
+    Employment_status = case_when(
+      LFACT %in% c(1, 2)      ~ "Employed",                     # worked / absent
+      LFACT %in% 3:10         ~ "Unemployed",                   # all unemployed subtypes
+      LFACT %in% 11:14        ~ "Not in labour force",          # NILF
+      TRUE                    ~ NA_character_
+    ) %>% factor(levels = c("Employed","Unemployed","Not in labour force")),
     # Recode Gender HERE and save it
-    Gender = recode(as.character(Gender), `1` = "Women", `2` = "Men")
+    Gender = recode(as.character(Gender), `1` = "Women", `2` = "Men"),
+    ChildStatus = case_when(
+      PKIDS == 1 ~ "Has children",
+      PKIDS == 0 ~ "No children"
+    )
   )
 
 
