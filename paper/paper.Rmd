@@ -1,0 +1,10 @@
+```{r}
+library(tidyverse)
+library(arrow)
+library(readr)
+library(scales)
+```
+
+```{r}
+data <- read_parquet("./data/01-cleaned_data/cleaned_census_data.parquet")
+```
