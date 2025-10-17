@@ -6,9 +6,6 @@ library(readr)
 # read data 
 data <- read_parquet("./data/00-raw_data/raw_census_data.parquet")
 
-# read data 
-data <- read_parquet("./data/00-raw_data/raw_census_data.parquet")
-
 clean_data <- data %>%
   select(AGEGRP, Gender, HDGREE, FPTWK, VISMIN, Wages, COW, WKSWRK, NAICS, PKIDS, LFACT) %>%
   filter(
