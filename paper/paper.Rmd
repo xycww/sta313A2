@@ -1,3 +1,14 @@
+---
+title: "How parenthood shapes the gender wage gap"
+subtitle: "Relative to men without children (ages 25–44)"
+author:
+  - "Sakura Hu"
+  - "Zhanyi Wang"
+date: "`r format(as.Date('2025-10-24'), '%B %d, %Y')`"
+output:
+  number_sections: true
+bibliography: references.bib
+---
 ```{r}
 library(tidyverse)
 library(arrow)
@@ -6,62 +17,165 @@ library(scales)
 ```
 
 ```{r}
-data <- read_parquet("./data/01-cleaned_data/cleaned_census_data.parquet")
+data <- read_parquet("/Users/hxw/sta313A2/data/01-cleaned_data/cleaned_census_data.parquet")
 ```
 
 ```{r}
+#2021 gap by age
 library(tidyverse)
 library(scales)
+library(ggrepel)
 
-# Human-readable VISMIN labels (2021 Census)
-vismin_labs <- c(
-  `1`  = "Not a visible minority",
-  `2`  = "South Asian",
-  `3`  = "Chinese",
-  `4`  = "Black",
-  `5`  = "Filipino",
-  `7`  = "Latin American",
-  `6`  = "Arab",
-  `8`  = "Southeast Asian",
-  `9`  = "West Asian",
-  `10` = "Korean",
-  `11` = "Japanese"
-  # 12 = Multiple VM (filtered), 13 = VM n.i.e. (filtered), 88 = Not applicable (filtered)
+# 'data' is your 2021 cleaned dataset already in memory:
+# data <- arrow::read_parquet("/Users/hxw/sta313A2/data/01-cleaned_data/cleaned_census_data.parquet")
+
+# Map census AGEGRP codes to labels
+age_labels <- c(
+  `7` = "18–19",
+  `8` = "20–24",
+  `9` = "25–29",
+  `10` = "30–34",
+  `11` = "35–39",
+  `12` = "40–44",
+  `13` = "45–49",
+  `14` = "50–54",
+  `15` = "55–59",
+  `16` = "60–64"
 )
 
-vismin_gap <- clean_data %>%
-  mutate(VISMIN_lab = recode(as.character(VISMIN), !!!vismin_labs)) %>%
-  filter(!is.na(VISMIN_lab)) %>%
-  group_by(VISMIN_lab, Gender) %>%
-  summarise(med_wage = median(Wages, na.rm = TRUE), n = n(), .groups = "drop_last") %>%
-  tidyr::pivot_wider(names_from = Gender, values_from = c(med_wage, n)) %>%
-  # optional: keep groups with decent sample sizes on both sides (tune thresholds)
-  # filter(n_Men >= 100, n_Women >= 100) %>%
-  mutate(gap_pct = (med_wage_Men - med_wage_Women) / med_wage_Men) %>%
-  arrange(desc(gap_pct)) %>%
-  mutate(VISMIN_lab = factor(VISMIN_lab, levels = VISMIN_lab))  # order in plot
+# Prep 2021 data
+df21 <- data %>%
+  mutate(
+    Gender = recode(as.character(Gender), `1` = "Women", `2` = "Men"),
+    Age = recode(as.character(AGEGRP), !!!age_labels)
+  ) %>%
+  filter(Gender %in% c("Women", "Men"), !is.na(Wages), !is.na(Age))
 
-# Plot
-p_vismin <- ggplot(vismin_gap, aes(x = VISMIN_lab, y = gap_pct)) +
-  geom_col(width = 0.75, fill = "grey30") +
-  geom_text(aes(label = label_percent(accuracy = 0.1)(gap_pct)),
-            vjust = -0.2, size = 3) +
-  scale_y_continuous(labels = label_percent(accuracy = 1), expand = expansion(mult = c(0, .08))) +
+# Compute gap by age for 2021: Gap = (Men − Women) / Men using medians
+gap_age <- df21 %>%
+  group_by(Age, Gender) %>%
+  summarise(med = median(Wages, na.rm = TRUE), .groups = "drop") %>%
+  tidyr::pivot_wider(names_from = Gender, values_from = med) %>%
+  filter(!is.na(Men), !is.na(Women)) %>%
+  mutate(Age = factor(Age, levels = age_labels),
+         gap_pct = (Men - Women) / Men) %>%
+  arrange(Age)
+
+# Red highlight point at 25–29
+pts_2529     <- gap_age %>% filter(Age == "25–29")
+pt_2529_top  <- pts_2529  # used for the ggrepel note
+
+p_2021 <- ggplot(gap_age, aes(Age, gap_pct, group = 1)) +
+  geom_line(linewidth = 1.1, color = "black") +
+  geom_point(size = 2, color = "black") +
+  # red dot + label at 25–29
+  geom_point(
+    data = pts_2529,
+    aes(Age, gap_pct),
+    inherit.aes = FALSE,
+    size = 3.8,
+    color = "red"
+  ) +
+  geom_text_repel(
+    data = pts_2529,
+    aes(Age, gap_pct, label = "Mean maternal \nage in Canada)"),
+    color = "red",
+    segment.color = "red",
+    nudge_y = 0.06,
+    box.padding = 0.35,
+    size = 3.2,
+    show.legend = FALSE
+  ) +
+  # Y axis: 0–30%
+  scale_y_continuous(
+    limits = c(0, 0.30),
+    breaks = seq(0, 0.30, by = 0.05),
+    labels = scales::label_percent(accuracy = 1)
+  ) +
   labs(
-    title = "Gender pay gap by visible-minority group",
-    x = NULL, y = "Gap percentage"
+    title = "Canada’s gender pay gap by age (2021)",
+    x = "Age group",
+    y = "Gap percentage",
+    caption = "Figure shows the gender pay gap by age for full-time, full-year workers. The gap narrows in the \nearly 20s, then rises sharply from 25–30 and continues to increase steadily thereafter."
+    
   ) +
   theme_minimal(base_size = 12) +
   theme(
-    axis.text.x = element_text(angle = 25, hjust = 1),
-    panel.grid.minor = element_blank()
+    legend.position  = "none",
+    panel.grid.minor = element_blank(),
+    # center the title
+    plot.title.position = "plot",
+    plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),
+    plot.caption = element_text(
+      size = 9.5,
+      colour = "#5a5a5a",
+      hjust = 0,
+      margin = margin(t = 10)
+    )
   )
 
-p_vismin
+
+p_2021
 
 ```
 ```{r}
-# 2-digit NAICS sector labels (StatsCan / NAICS 2017 v3.0)
+# gap by education
+library(dplyr)
+library(tidyr)
+library(forcats)
+library(ggplot2)
+library(scales)
+
+# Compute median wages by Education × Gender, then the gap = (Men − Women) / Men
+edu_gap <- clean_data %>%
+  filter(!is.na(Edu3)) %>%
+  group_by(Edu3, Gender) %>%
+  summarise(med_wage = median(Wages, na.rm = TRUE), .groups = "drop_last") %>%
+  pivot_wider(names_from = Gender, values_from = med_wage) %>%
+  mutate(gap_pct = (Men - Women) / Men) %>%
+  drop_na(gap_pct) %>%
+  # order categories from lowest → highest gap
+  mutate(Edu3 = as.character(Edu3)) %>%
+  arrange(gap_pct) %>%
+  mutate(Edu3 = factor(Edu3, levels = Edu3))
+
+# palette per education level (tweak if you like)
+edu_cols <- c(
+  "HS or less"          = "#fdbb84",
+  "Non-degree postsec"  = "#9ecae1",
+  "BA or higher"        = "#a1d99b"
+)
+
+ggplot(edu_gap, aes(x = gap_pct, y = Edu3, fill = Edu3)) +
+  geom_col(width = 0.7) +
+  geom_vline(xintercept = 0, linetype = "dashed", colour = "grey55") +
+  geom_text(aes(label = percent(gap_pct, accuracy = 0.1)),
+            hjust = -0.12, size = 3.2, colour = "grey20") +
+  scale_x_continuous(labels = percent_format(accuracy = 1),
+                     expand = expansion(mult = c(0.02, 0.12))) +
+  scale_fill_manual(values = edu_cols, name = "Education") +
+  labs(
+    title   = "Gender pay gap by education level",
+    x       = "Gap percentage",
+    y       = NULL,
+    caption = "Figure shows the gender pay gap by education level. The gap is largest among those with non-degree postsecondary \ncredentials (25.3%) and smallest among those with a bachelor’s degree or higher (16.8%)."
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    panel.grid.minor = element_blank(),
+    legend.position  = "right",
+    plot.title.position = "plot",
+    plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),
+    plot.caption.position = "plot",
+    plot.caption        = element_text(hjust = 0)
+  )
+
+```
+
+```{r}
+# gap by occupation
+
+# 2-digit NAICS sector labels
 naics_labs <- c(
   `11` = "Agriculture, forestry, fishing & hunting",
   `21` = "Mining, quarrying, oil & gas",
@@ -85,468 +199,410 @@ naics_labs <- c(
   `91` = "Public administration"
 )
 
+
 naics_gap <- clean_data %>%
   mutate(NAICS_lab = recode(as.character(NAICS), !!!naics_labs)) %>%
   filter(!is.na(NAICS_lab)) %>%
   group_by(NAICS_lab, Gender) %>%
-  summarise(med_wage = median(Wages, na.rm = TRUE), n = n(), .groups = "drop_last") %>%
-  tidyr::pivot_wider(names_from = Gender, values_from = c(med_wage, n)) %>%
-  # optional sample-size guard
-  # filter(n_Men >= 100, n_Women >= 100) %>%
-  mutate(gap_pct = (med_wage_Men - med_wage_Women) / med_wage_Men) %>%
-  arrange(gap_pct) %>%
-  mutate(NAICS_lab = factor(NAICS_lab, levels = NAICS_lab))  # order for coord_flip
+  summarise(med_wage = median(Wages, na.rm = TRUE), .groups = "drop_last") %>%
+  pivot_wider(names_from = Gender, values_from = med_wage) %>%
+  mutate(
+    gap_pct = (Men - Women) / Men,
+    # (Men − Women) / Men
+    gap_cat = case_when(
+      gap_pct < 0    ~ "Women higher",
+      gap_pct < 0.10 ~ "0–10%",
+      gap_pct < 0.20 ~ "10–20%",
+      TRUE           ~ "≥20%"
+    ),
+    # set factor order HIGH → LOW so bars run top (largest) to bottom (smallest) after coord_flip()
+    NAICS_lab = fct_reorder(NAICS_lab, gap_pct, .desc = TRUE)
+  ) %>%
+  tidyr::drop_na(gap_pct)
 
-# Plot (flipped for readability)
-p_naics <- ggplot(naics_gap, aes(x = NAICS_lab, y = gap_pct)) +
-  geom_col(width = 0.7, fill = "grey30") +
-  geom_text(aes(label = label_percent(accuracy = 0.1)(gap_pct)),
-            hjust = -0.1, size = 3) +
+# palette with strong separation (green for negative, oranges/reds for larger gaps)
+pal <- c(
+  "Women higher" = "#2ca25f",
+  "0–10%"       = "#fee8c8",
+  "10–20%"      = "#fdbb84",
+  "≥20%"        = "#e34a33"
+)
+
+# --- single plot object ---
+p_naics <- ggplot(naics_gap, aes(
+  x = reorder(NAICS_lab, gap_pct),
+  y = gap_pct,
+  fill = gap_cat
+)) +
+  geom_col(width = 0.72) +
+  geom_text(
+    aes(label = percent(gap_pct, accuracy = 0.1)),
+    hjust = -0.12,
+    size = 3.1,
+    colour = "grey20"
+  ) +
   coord_flip() +
-  scale_y_continuous(labels = label_percent(accuracy = 1), expand = expansion(mult = c(0, .08))) +
+  scale_y_continuous(labels = percent_format(accuracy = 1), expand = expansion(mult = c(0.02, 0.12))) +
+  scale_fill_manual(name = "Gap size", values = pal) +
   labs(
-    title = "Gender pay gap by industry (NAICS 2-digit sectors)",
-    x = NULL, y = "Gap percentage"
+    title   = "Gender pay gap by industry(gai)",
+    x       = NULL,
+    y       = "Gap percentage",
+    caption = "Figure shows the gender pay gap by industry for full-time, full-year workers.Gaps exist across all sectors, ranging roughly \nfrom 9% to 30%. Finance & insurance is among the highest."
   ) +
   theme_minimal(base_size = 12) +
-  theme(panel.grid.minor = element_blank())
+  theme(
+    panel.grid.minor    = element_blank(),
+    plot.title.position = "plot",
+    plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),
+    plot.caption.position = "plot",
+    plot.caption        = element_text(hjust = 0)
+  )
 
 p_naics
-
-```
-
-
-```{r}
-women <- clean_data %>% filter(Gender == "Women", !is.na(ChildStatus), !is.na(Wages))
-# Median wages per group
-summ <- women %>%
-  group_by(ChildStatus) %>%
-  summarise(med_wage = median(Wages, na.rm = TRUE), .groups = "drop") %>%
-  mutate(ChildStatus = factor(ChildStatus, levels = c("No children","Has children")))
-
-# Two-bar chart
-ggplot(summ, aes(x = ChildStatus, y = med_wage, fill = ChildStatus)) +
-  geom_col(width = 0.6, show.legend = FALSE, color = "white") +
-  geom_text(aes(label = dollar(med_wage)), vjust = -0.35, size = 3.3) +
-  scale_fill_manual(values = c("No children" = "#00BFC4", "Has children" = "#C77CFF")) +
-  scale_y_continuous(labels = dollar_format(),
-                     expand = expansion(mult = c(0.02, 0.08))) +
-  labs(
-    title = "Women’s median wages by presence of children in the census family",
-    x = NULL, y = "Median wages (CAD)"
-  ) +
-  theme_minimal(base_size = 12) +
-  theme(panel.grid.minor = element_blank())
-```
-```{r}
-library(scales)
-
-ggplot(women, aes(x = factor(ChildStatus, levels = c("No children","Has children")),
-                  y = Wages)) +
-  geom_boxplot(width = 0.55, outlier.alpha = 0.25,
-               color = "grey25", fill = "white") +
-  # median dot + label
-  stat_summary(fun = median, geom = "point", size = 2.2, color = "black") +
-  stat_summary(fun = median, geom = "text",
-               aes(label = dollar(median(..y..))), vjust = -0.7, size = 3.1) +
-  # show sample sizes under each box
-  stat_summary(fun = length, geom = "text",
-               aes(label = paste0("n = ", scales::comma(..y..))),
-               vjust = 1.8, size = 3.0, color = "#666666") +
-  # trim the y-range to reduce the effect of extreme outliers on the display
-  coord_cartesian(ylim = c(0, quantile(women$Wages, 0.99, na.rm = TRUE))) +
-  scale_y_continuous(labels = dollar_format()) +
-  labs(
-    title = "Women’s wages by presence of children in the census family",
-    x = NULL,
-    y = "Wages (CAD)"
-  ) +
-  theme_minimal(base_size = 12) +
-  theme(panel.grid.minor = element_blank())
-
-```
-```{r}
-library(tidyverse)
-library(scales)
-
-# Restrict to age 25–45 (bins: 25–29, 30–34, 35–39, 40–44)
-women_25_45 <- women %>% 
-  filter(AGEGRP %in% 9:12)   # AGEGRP codes: 9=25–29, 10=30–34, 11=35–39, 12=40–44
-
-ggplot(women_25_45, aes(x = factor(ChildStatus, levels = c("No children","Has children")),
-                        y = Wages)) +
-  geom_boxplot(width = 0.55, outlier.alpha = 0.25,
-               color = "grey25", fill = "white") +
-  # median dot + label
-  stat_summary(fun = median, geom = "point", size = 2.2, color = "black") +
-  stat_summary(fun = median, geom = "text",
-               aes(label = dollar(median(..y..))), vjust = -0.7, size = 3.1) +
-  # sample sizes under each box
-  stat_summary(fun = length, geom = "text",
-               aes(label = paste0("n = ", scales::comma(..y..))),
-               vjust = 1.8, size = 3.0, color = "#666666") +
-  coord_cartesian(ylim = c(0, quantile(women_25_45$Wages, 0.99, na.rm = TRUE))) +
-  scale_y_continuous(labels = dollar_format()) +
-  labs(
-    title = "Women’s wages by presence of children (ages 25–45)",
-    x = NULL, y = "Wages (CAD)"
-  ) +
-  theme_minimal(base_size = 12) +
-  theme(panel.grid.minor = element_blank())
-
 ```
 
 ```{r}
 library(tidyverse)
 library(scales)
+library(grid)
 
-# Restrict to ages 25–44
-df <- clean_data %>%
-  mutate(
-    Gender = recode(as.character(Gender), `1`="Women", `2`="Men"),
-    ChildStatus = case_when(
-      PKIDS == 1 ~ "Has children",
-      PKIDS == 0 ~ "No children",
-      TRUE       ~ NA_character_
+# ---------- helpers ----------
+who_lab <- function(gender, kids) {
+  paste0(ifelse(gender == "Men", "men", "women"),
+         "\n",
+         ifelse(kids == "Has children", "with\nchildren", "without\nchildren"))
+}
+
+# Use the pts you already have, but DROP the "Men — No children" point,
+# because that dot is drawn from baseline_dots at x = 0 (to avoid duplicate labels).
+pts_nonbase <- pts %>%
+  filter(!(Gender == "Men" & ChildStatus == "No children"))
+
+# Build the % labels that sit UNDER each dot (colored like the dot)
+pct_labels <- bind_rows(
+  # real (non-baseline) dots: men-with-children, women-with/without
+  pts_nonbase %>%
+    transmute(
+      x      = gap +
+        case_when(
+          Gender == "Women" & ChildStatus == "Has children"  ~ -0.010, # separate the two red dots
+          Gender == "Women" & ChildStatus == "No children"   ~  0.010,
+          TRUE                                                ~  0
+        ),
+      y      = line_y - 0.08,
+      lab    = percent(gap, accuracy = 0.1),
+      col    = dot_col
+    ),
+  # baseline 0% labels (only once per line, from baseline_dots)
+  baseline_dots %>%
+    transmute(
+      x   = gap,
+      y   = line_y - 0.08,
+      lab = percent(0, accuracy = 0.1),
+      col = dot_col
     )
-  ) %>%
-  filter(
-    AGEGRP %in% 9:12,                 # 25–29, 30–34, 35–39, 40–44
-    !is.na(Wages),
-    Gender %in% c("Women","Men"),
-    !is.na(ChildStatus)
+)
+
+# Build the “who” labels under the percent labels (also colored like the dot)
+who_labels <- bind_rows(
+  pts_nonbase %>%
+    transmute(
+      x = gap +
+        case_when(
+          Gender == "Women" & ChildStatus == "Has children"  ~ -0.010,
+          Gender == "Women" & ChildStatus == "No children"   ~  0.010,
+          TRUE                                                ~  0
+        ),
+      y   = line_y - 0.27,                 # sit a bit lower than the % text
+      lab = who_lab(Gender, ChildStatus),
+      col = dot_col
+    ),
+  baseline_dots %>%
+    transmute(
+      x   = 0,
+      y   = line_y - 0.27,
+      lab = "men\nwithout\nchildren",       # baseline label appears once per line
+      col = "#4F83FF"
+    )
+)
+
+# ---------- plot ----------
+ggplot() +
+  # number lines with double arrows
+  geom_segment(aes(x = x_left, xend = x_right, y = 1, yend = 1),
+               linewidth = 1.1, color = "grey35",
+               arrow = arrow(ends = "both", type = "closed", length = unit(6, "pt"))) +
+  geom_segment(aes(x = x_left, xend = x_right, y = 0, yend = 0),
+               linewidth = 1.1, color = "grey35",
+               arrow = arrow(ends = "both", type = "closed", length = unit(6, "pt"))) +
+  # center tick (0%) on both lines
+  geom_segment(aes(x = 0, xend = 0, y = -0.06, yend = 0.06),
+               color = "grey40", linewidth = 0.6) +
+  # baseline blue dots at 0% (both lines)
+  geom_point(data = baseline_dots,
+             aes(x = gap, y = line_y),
+             color = baseline_dots$dot_col, size = baseline_dots$dot_size) +
+  # group dots (no double-draw of men-no-children)
+  geom_point(data = pts_nonbase,
+             aes(x = gap, y = line_y),
+             color = pts_nonbase$dot_col, size = pts_nonbase$dot_size) +
+  # percent labels (under dots)
+  geom_text(data = pct_labels,
+            aes(x = x, y = y, label = lab, colour = I(col)),
+            size = 3.3, vjust = 1) +
+  # who labels (beneath the percents)
+  geom_text(data = who_labels,
+            aes(x = x, y = y, label = lab, colour = I(col)),
+            lineheight = 1.05, size = 3.3) +
+  # Less / More at line ends
+  annotate("text", x = x_left,  y = 1, label = "Less",  hjust = 1.1, vjust = 0.5, size = 4) +
+  annotate("text", x = x_right, y = 1, label = "More",  hjust = -0.1, vjust = 0.5, size = 4) +
+  annotate("text", x = x_left,  y = 0, label = "Less",  hjust = 1.1, vjust = 0.5, size = 4) +
+  annotate("text", x = x_right, y = 0, label = "More",  hjust = -0.1, vjust = 0.5, size = 4) +
+  # “Wage gap” centered above each line
+  annotate("text", x = 0, y = 1.12, label = "Wage gap", fontface = "bold", size = 4) +
+  annotate("text", x = 0, y = 0.12, label = "Wage gap", fontface = "bold", size = 4) +
+  # axis / view
+  scale_x_continuous(labels = label_percent(accuracy = 1)) +
+  coord_cartesian(xlim = c(x_left, x_right), ylim = c(-0.45, 1.35), clip = "off") +
+  labs(
+    title = "How parenthood shapes the gender wage gap relative to men without children (ages 25–44)?",
+    caption = "Top line: wage gaps for men (with vs. without children); bottom line: wage gaps for women relative to men without \nchildren. Parenthood is associated with a wage premium for men and a pronounced penalty for women—largest \nfor women with children.",
+    x = NULL, y = NULL
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    panel.grid      = element_blank(),
+    axis.text.y     = element_blank(),
+    plot.title      = element_text(face = "bold"),
+    plot.subtitle   = element_text(size = 10.2),
+    plot.caption.position = "plot",
+    plot.caption = element_text(hjust = 0),
+    plot.margin     = margin(t = 8, r = 10, b = 10, l = 10)
   )
 
-# Median wages by Gender x ChildStatus
-meds <- df %>%
+```
+
+```{r}
+# --- Parent premium/penalty on a single number line --------------------------
+library(tidyverse)
+library(scales)
+library(grid)
+
+# Build the four groups (ages 25–44, full-time/full-year already in clean_data)
+pts <- clean_data %>%
+  mutate(
+    Gender = recode(as.character(Gender), `1`="Women", `2`="Men"),
+    ChildStatus = case_when(PKIDS == 1 ~ "Has children",
+                            PKIDS == 0 ~ "No children",
+                            TRUE ~ NA_character_)
+  ) %>%
+  filter(AGEGRP %in% 9:12,                      # 25–44
+         Gender %in% c("Men","Women"),
+         !is.na(ChildStatus),
+         !is.na(Wages)) %>%
   group_by(Gender, ChildStatus) %>%
-  summarise(med_wage = median(Wages, na.rm = TRUE), n = n(), .groups = "drop")
+  summarise(med = median(Wages, na.rm = TRUE), .groups = "drop") %>%
+  # baseline = Men — No children
+  mutate(baseline = med[Gender == "Men" & ChildStatus == "No children"][1],
+         gap = (med - baseline) / baseline) %>%
+  mutate(
+    # aesthetics for the four dots
+    dot_col = case_when(
+      Gender == "Men"    & ChildStatus == "No children" ~ "#4F83FF", # blue (baseline)
+      Gender == "Men"    & ChildStatus == "Has children" ~ "#2E5BD4", # darker blue
+      Gender == "Women"  & ChildStatus == "No children" ~ "#F48FB1", # pink
+      Gender == "Women"  & ChildStatus == "Has children" ~ "#E53935"  # red
+    ),
+    who = paste(if_else(Gender=="Men","men","women"),
+                if_else(ChildStatus=="Has children","\nwith\nchildren","\nwithout\nchildren")),
+    # --- NEW: small horizontal nudge so the two women's labels don't overlap ---
+    x_nudge = case_when(
+      Gender == "Women" & ChildStatus == "Has children"  ~ -0.012, # move a bit left
+      Gender == "Women" & ChildStatus == "No children"   ~  0.012, # move a bit right
+      TRUE ~ 0
+    )
+  )
 
-# Baseline: Men — No children
-baseline <- meds %>% filter(Gender == "Men", ChildStatus == "No children") %>% pull(med_wage)
-if (length(baseline) == 0) stop("No baseline found: check PKIDS coding and data filters.")
+# handy values for brackets
+g_men_nc  <- pts$gap[pts$Gender=="Men"   & pts$ChildStatus=="No children"]
+g_men_wc  <- pts$gap[pts$Gender=="Men"   & pts$ChildStatus=="Has children"]
+g_wom_nc  <- pts$gap[pts$Gender=="Women" & pts$ChildStatus=="No children"]
+g_wom_wc  <- pts$gap[pts$Gender=="Women" & pts$ChildStatus=="Has children"]
 
-# Compute gap vs baseline and set 4-level order
-plot_df <- meds %>%
-  mutate(group = paste(Gender, "—", ChildStatus),
-         gap = (med_wage - baseline) / baseline) %>%
-  mutate(group = factor(group,
-                        levels = c("Men — Has children",
-                                   "Men — No children",
-                                   "Women — Has children",
-                                   "Women — No children")))
+# differences to show above brackets
+delta_womNC_menNC <- g_men_nc - g_wom_nc
+delta_womWC_menWC <- g_men_wc - g_wom_wc
+
+# number-line limits
+x_left  <- -0.20
+x_right <-  0.20
+
+# y positions
+y_line  <- 0
+y_pct   <- -0.03     # percent just under each dot
+y_who   <- -0.10     # two-line labels under the percent
+y_brk1  <-  0.12     # small bracket height
+y_brk2  <-  0.20     # big bracket height
+
+# a small helper to draw squared brackets
+bracket <- function(x0, x1, y, tick = 0.03, ...) {
+  list(
+    annotate("segment", x = x0, xend = x0, y = y, yend = y - tick, ...),
+    annotate("segment", x = x0, xend = x1, y = y, yend = y, ...),
+    annotate("segment", x = x1, xend = x1, y = y, yend = y - tick, ...)
+  )
+}
 
 # Plot
-ggplot(plot_df, aes(x = group, y = gap, fill = Gender)) +
-  geom_col(width = 0.65, color = "white") +
-  geom_text(aes(label = label_percent(accuracy = 0.1)(gap)),
-            vjust = -0.35, size = 3.2) +
-  scale_fill_manual(values = c("Women" = "#FF6FB1", "Men" = "#4F83FF")) +
-  scale_y_continuous(labels = label_percent(accuracy = 1),
-                     expand = expansion(mult = c(0.02, 0.09))) +
+ggplot() +
+  # arrowed number line
+  geom_segment(aes(x = x_left, xend = x_right, y = y_line, yend = y_line),
+               linewidth = 1.2, color = "grey30",
+               arrow = arrow(ends = "both", type = "closed", length = unit(6, "pt"))) +
+  annotate("text", x = x_left,  y = y_line, label = "Less",  hjust = 1.2, vjust = 0.4, size = 4) +
+  annotate("text", x = x_right, y = y_line, label = "More",  hjust = -0.2, vjust = 0.4, size = 4) +
+  annotate("text", x = 0, y = y_line - 0.185, label = "Wage comparing to man without children", fontface = "bold", size = 4) +
+  # zero tick
+  geom_segment(aes(x = 0, xend = 0, y = y_line - 0.04, yend = y_line + 0.04),
+               color = "grey45", linewidth = 0.6) +
+  # the four dots
+  geom_point(data = pts, aes(x = gap, y = y_line), color = pts$dot_col, size = 4) +
+  # % under each dot (colored like the dot) — now use x = gap + x_nudge
+  geom_text(data = pts,
+            aes(x = gap + x_nudge, y = y_pct, label = percent(gap, accuracy = 0.1),
+                colour = I(dot_col)),
+            size = 3, vjust = 1) +
+  # who-labels under the % — now use x = gap + x_nudge
+  geom_text(data = pts,
+            aes(x = gap + x_nudge, y = y_who, label = who, colour = I(dot_col)),
+            lineheight = 0.95, size = 3) +
+
+  # ---- Brackets like your sketch ----
+  # small bracket: women w/o children  → men w/o children (≈ 13.9%)
+  bracket(g_wom_nc, g_men_nc, y = y_brk1, color = "grey40", linewidth = 0.7)+
+  annotate("text", x = (g_wom_nc + g_men_nc)/2, y = y_brk1 + 0.03,
+           label = percent(delta_womNC_menNC, accuracy = 0.1), size = 4)+
+  # big bracket: women w/ children → men w/ children (≈ 22.2%)
+  bracket(g_wom_wc, g_men_wc, y = y_brk2, color = "black", linewidth = 0.7)+
+  annotate("text", x = (g_wom_wc + g_men_wc)/2, y = y_brk2 + 0.03,
+           label = percent(delta_womWC_menWC, accuracy = 0.1), size = 4)+
+
+  # axis & theme
+  scale_x_continuous(labels = percent_format(accuracy = 10),
+                     breaks = seq(-0.2, 0.2, by = 0.1)) +
+  coord_cartesian(xlim = c(x_left, x_right), ylim = c(-0.26, 0.28), clip = "off") +
   labs(
-    title = "Wage gap vs. baseline (Men — No children), ages 25–44",
-    subtitle = "Gap = (median group − median Men–No-children) / median Men–No-children",
-    x = NULL, y = "Gap (relative to Men — No children)", fill = NULL
+    title = "How parenthood shapes the gender wage gap relative to men without children\n(ages 25–44)",
+    caption = "Top line: wage gaps for men (with vs. without children); bottom line: wage gaps for women relative to men without \nchildren. Parenthood is associated with a wage premium for men and a pronounced penalty for women—largest \nfor women with children.",
+    x = NULL, y = NULL
   ) +
-  theme_minimal(base_size = 12) +
-  theme(panel.grid.minor = element_blank(),
-        axis.text.x = element_text(angle = 15, hjust = 1))
-
-```
-```{r}
-library(tidyverse)
-library(scales)
-
-# Restrict to ages 25–44 and build a child-status flag
-df_25_44 <- clean_data %>%
-  mutate(
-    Gender = recode(as.character(Gender), `1`="Women", `2`="Men"),
-    ChildStatus = case_when(
-      PKIDS == 1 ~ "Has children",
-      PKIDS == 0 ~ "No children",
-      TRUE       ~ NA_character_
-    )
-  ) %>%
-  filter(
-    AGEGRP %in% 9:12,          # 25–29, 30–34, 35–39, 40–44
-    !is.na(Wages),
-    Gender %in% c("Women","Men"),
-    !is.na(ChildStatus)
+  theme_minimal(base_size = 13) +
+  theme(
+    panel.grid = element_blank(),
+    axis.text.y = element_blank(),
+    plot.margin = margin(t = 6, r = 12, b = 8, l = 12),
+    plot.title      = element_text(face = "bold"),
+    plot.subtitle   = element_text(size = 10.2),
+    plot.caption.position = "plot",
+    plot.caption = element_text(hjust = 0),
   )
 
-# Median wages by ChildStatus x Gender, then compute gap = (Men - Women) / Men
-gap_child <- df_25_44 %>%
-  group_by(ChildStatus, Gender) %>%
-  summarise(med = median(Wages, na.rm = TRUE), .groups = "drop") %>%
-  tidyr::pivot_wider(names_from = Gender, values_from = med) %>%
-  # keep only statuses where we have both genders
-  filter(!is.na(Men), !is.na(Women)) %>%
-  mutate(
-    gap = (Men - Women) / Men,
-    ChildStatus = factor(ChildStatus, levels = c("No children","Has children"))
-  ) %>%
-  arrange(ChildStatus)
-
-# Plot: two bars = with kids vs without kids
-ggplot(gap_child, aes(x = ChildStatus, y = gap, fill = ChildStatus)) +
-  geom_col(width = 0.6, color = "white", show.legend = FALSE) +
-  geom_text(aes(label = label_percent(accuracy = 0.1)(gap)),
-            vjust = -0.35, size = 3.2) +
-  scale_fill_manual(values = c("No children" = "#00BFC4", "Has children" = "#C77CFF")) +
-  scale_y_continuous(labels = label_percent(accuracy = 1),
-                     expand = expansion(mult = c(0.02, 0.08))) +
-  labs(
-    title = "Gender pay gap (ages 25–44): with vs without children",
-    subtitle = "Gap = (Men median − Women median) / Men median, using medians within each group",
-    x = NULL, y = "Gap percentage"
-  ) +
-  theme_minimal(base_size = 12) +
-  theme(panel.grid.minor = element_blank())
 
 ```
 
+
 ```{r}
-another <- read_parquet("/Users/hxw/sta313A2/data/00-raw_data/raw_census_data.parquet")
+another <- read_parquet("/Users/hxw/sta313A2/data/01-cleaned_data/cleaned_unemployment_data.parquet")
 ```
 
 ```{r}
 library(tidyverse)
 library(scales)
+library(tidyverse)
+library(scales)
 
-# ---- 1) Prep from RAW ----
-# Robust recodes
-age_labs <- c(`7`="18–19", `8`="20–24", `9`="25–29", `10`="30–34",
-              `11`="35–39", `12`="40–44", `13`="45–49", `14`="50–54",
-              `15`="55–59", `16`="60–64")
+## 1) Prep from `another`
+lf <- another %>%
+  # keep only the labour force rows (your file is already filtered, but this is harmless)
+  filter(Employment_status %in% c("Employed", "Unemployed")) %>%
+  select(Age, Gender, Unemployed)
 
-df <- another %>%
-  # keep the minimal columns we need
-  select(AGEGRP, Gender, LFACT, PKIDS) %>%
-  # age 18–65 only
-  filter(AGEGRP %in% 7:16) %>%
-  mutate(
-    Age = factor(age_labs[as.character(AGEGRP)], levels = age_labs),
-
-    # Gender codes: 1 = Women, 2 = Men (be defensive if already labeled)
-    Gender = recode(as.character(Gender),
-                    `1`="Women", `2`="Men"),
-
-    # Labour-force status from LFACT
-    # 1–2 employed, 3–10 unemployed, 11–14 not in labour force, 88/99 missing
-    LF_status = case_when(
-      LFACT %in% 1:2  ~ "Employed",
-      LFACT %in% 3:10 ~ "Unemployed",
-      LFACT %in% 11:14 ~ "NILF",
-      TRUE ~ NA_character_
-    )
-  )
-
-# Helper: filter to the labour force only (employed + unemployed)
-lf <- df %>%
-  filter(LF_status %in% c("Employed","Unemployed"))
-
-# ---- 2) Plot A: Unemployment rate by age with separate lines for men/women ----
+## 2) Unemployment rate by age × gender
 age_gender_rate <- lf %>%
   group_by(Age, Gender) %>%
   summarise(
-    unemployed = sum(LF_status == "Unemployed"),
+    unemployed = sum(Unemployed, na.rm = TRUE),
     labour     = n(),
     rate       = unemployed / labour,
-    .groups = "drop"
+    .groups    = "drop"
   )
 
-p_age_gender <- ggplot(age_gender_rate,
-                       aes(x = Age, y = rate, color = Gender, group = Gender)) +
-  geom_line(linewidth = 1) +
-  geom_point(size = 2) +
+## 3) Plot — Men blue, Women red
+ggplot(age_gender_rate,
+       aes(x = Age, y = rate, group = Gender, color = Gender)) +
+  geom_line(linewidth = 1.05) +
+  geom_point(size = 2.4) +
+  scale_color_manual(values = c("Men" = "#4F83FF", "Women" = "#E15759")) +
   scale_y_continuous(labels = percent_format(accuracy = 0.1), limits = c(0, NA)) +
   labs(
     title = "Unemployment rate by age",
-    subtitle = "Among the labour force (employed + unemployed)",
-    x = "Age group", y = "Unemployment rate", color = NULL
+    subtitle = "Among the labour force (employed + unemployed), ages 25–64",
+    x = "Age group",
+    y = "Unemployment rate",
+    color = NULL
   ) +
   theme_minimal(base_size = 12) +
-  theme(legend.position = "top")
-
-p_age_gender
-
-```
-
-```{r}
-# ---- 3) Plot B: Unemployment rate for women with vs without children ----
-women_child_rate <- lf %>%
-  filter(Gender == "Women") %>%
-  mutate(
-    ChildStatus = case_when(
-      PKIDS == 1 ~ "Has children",
-      PKIDS == 0 ~ "No children",
-      TRUE ~ NA_character_
-    )
-  ) %>%
-  filter(!is.na(ChildStatus)) %>%
-  group_by(ChildStatus) %>%
-  summarise(
-    unemployed = sum(LF_status == "Unemployed"),
-    labour     = n(),
-    rate       = unemployed / labour,
-    .groups = "drop"
+  theme(
+    legend.position   = "top",
+    panel.grid.minor  = element_blank()
   )
 
-p_women_children <- ggplot(women_child_rate,
-                           aes(x = ChildStatus, y = rate, fill = ChildStatus)) +
-  geom_col(width = 0.6) +
-  geom_text(aes(label = percent(rate, accuracy = 0.1)),
-            vjust = -0.4, size = 3.6) +
-  scale_y_continuous(labels = percent_format(accuracy = 0.1), limits = c(0, NA)) +
-  scale_fill_manual(values = c("No children" = "#4F83FF", "Has children" = "#FF6FB1")) +
-  labs(
-    title = "Unemployment rate among women by presence of children in the family",
-    subtitle = "Among the labour force (employed + unemployed)",
-    x = NULL, y = "Unemployment rate", fill = NULL
-  ) +
-  theme_minimal(base_size = 12) +
-  theme(legend.position = "none")
-
-p_women_children
-
 ```
+
+
 ```{r}
 library(tidyverse)
 library(scales)
 
-# --- Prep from raw (another) ---
-age_labs <- c(`7`="18–19", `8`="20–24", `9`="25–29", `10`="30–34",
-              `11`="35–39", `12`="40–44", `13`="45–49",
-              `14`="50–54", `15`="55–59", `16`="60–64")
+# Expecting clean_unemp with columns:
+# Age (factor), Gender ("Women"/"Men"), Employment_status, Unemployed (logical), ChildStatus ("Has children"/"No children")
+# If you loaded it as `another`, just do: clean_unemp <- another
 
-df <- another %>%
-  select(AGEGRP, Gender, LFACT, PKIDS) %>%
-  filter(AGEGRP %in% 7:16) %>%                         # ages 18–65
-  mutate(
-    Age = factor(age_labs[as.character(AGEGRP)],
-                 levels = c("18–19","20–24","25–29","30–34",
-                            "35–39","40–44","45–49","50–54","55–59","60–64")),
-    Gender = recode(as.character(Gender), `1`="Women", `2`="Men",
-                    "woMen"="Women", "men"="Men", .default = as.character(Gender)),
-    # Labour-force status: 1–2 employed; 3–10 unemployed; 11–14 out of LF; 88/99 missing
-    LF_status = case_when(
-      LFACT %in% 1:2   ~ "Employed",
-      LFACT %in% 3:10  ~ "Unemployed",
-      LFACT %in% 11:14 ~ "NILF",
-      TRUE ~ NA_character_
-    ),
-    # Children flag at census time: in your data 1 = has kids, 0 = none
-    ChildStatus = case_when(
-      PKIDS == 1 ~ "Has children",
-      PKIDS == 0 ~ "No children",
-      TRUE ~ NA_character_
-    )
-  )
-
-# Labour force only (Employed + Unemployed), Women only
-lf_women <- df %>%
+# Keep women in the labour force (your file already filtered to InLF, but this is harmless)
+lf_women <- another %>%
   filter(Gender == "Women",
-         LF_status %in% c("Employed","Unemployed"),
+         Employment_status %in% c("Employed","Unemployed"),
          !is.na(ChildStatus))
 
 # Unemployment rate by Age × ChildStatus
 urate_women_age <- lf_women %>%
   group_by(Age, ChildStatus) %>%
   summarise(
-    unemployed   = sum(LF_status == "Unemployed"),
-    labour_force = n(),
-    urate        = unemployed / labour_force,
+    labour = n(),
+    urate  = mean(Unemployed, na.rm = TRUE),   # Unemployed / (Employed + Unemployed)
     .groups = "drop"
   )
 
-# Plot: two trend lines (Women with vs without children)
-ggplot(urate_women_age, aes(Age, urate, color = ChildStatus, group = ChildStatus)) +
+# Plot: Has children = red, No children = pink
+ggplot(urate_women_age, aes(x = Age, y = urate, color = ChildStatus, group = ChildStatus)) +
   geom_line(linewidth = 1) +
   geom_point(size = 2) +
-  scale_color_manual(values = c("No children" = "#4F83FF", "Has children" = "#FF6FB1")) +
+  scale_color_manual(values = c("Has children" = "#E53935",  # red
+                                "No children" = "#F48FB1")) + # pink  ← plus goes here
   scale_y_continuous(labels = percent_format(accuracy = 0.1), limits = c(0, NA)) +
   labs(
-    title = "Unemployment rate by age among women,\nwith vs without children (cross-sectional)",
-    subtitle = "Rate = Unemployed / (Employed + Unemployed) within age group",
+    title = "Unemployment rate by age among women: with vs. without children",
+    subtitle = "Rate = Unemployed / (Employed + Unemployed) within each age group",
     x = "Age group", y = "Unemployment rate", color = NULL
   ) +
   theme_minimal(base_size = 12) +
-  theme(legend.position = "top", panel.grid.minor = element_blank())
-
-urate_women_age %>%
-  filter(Age %in% c("30–34","35–39","40–44")) %>%
-  ggplot(aes(Age, urate, color = ChildStatus, group = ChildStatus)) +
-  geom_line(linewidth = 1) + geom_point(size = 2) + ... # same styling
-
-```
-```{r}
-library(tidyverse)
-library(scales)
-
-# If df from the previous step doesn't exist, build it quickly
-if (!exists("df")) {
-  age_labs <- c(`7`="18–19", `8`="20–24", `9`="25–29", `10`="30–34",
-                `11`="35–39", `12`="40–44", `13`="45–49", `14`="50–54",
-                `15`="55–59", `16`="60–64")
-  df <- another %>%
-    select(AGEGRP, Gender, LFACT, PKIDS) %>%
-    filter(AGEGRP %in% 7:16, !LFACT %in% c(88, 99)) %>%
-    mutate(
-      Age = factor(age_labs[as.character(AGEGRP)],
-                   levels = c("18–19","20–24","25–29","30–34","35–39",
-                              "40–44","45–49","50–54","55–59","60–64")),
-      Gender = case_when(
-        as.character(Gender) %in% c("1","woMen") ~ "Women",
-        as.character(Gender) %in% c("2","men")   ~ "Men",
-        TRUE ~ as.character(Gender)
-      ),
-      LF_status = case_when(
-        LFACT %in% 1:2   ~ "Employed",
-        LFACT %in% 3:10  ~ "Unemployed",
-        LFACT %in% 11:14 ~ "NILF",
-        TRUE ~ NA_character_
-      ),
-      ChildStatus = case_when(
-        PKIDS == 1 ~ "Has children",
-        PKIDS == 0 ~ "No children",
-        TRUE ~ NA_character_
-      )
-    )
-}
-
-# Keep labour force only; compute unemployment rate by Age x ChildStatus for MEN
-urate_men_child_by_age <- df %>%
-  filter(Gender == "Men",
-         LF_status %in% c("Employed","Unemployed"),
-         !is.na(ChildStatus)) %>%
-  group_by(Age, ChildStatus) %>%
-  summarise(
-    unemployed   = sum(LF_status == "Unemployed"),
-    labour_force = n(),
-    urate        = unemployed / labour_force,
-    .groups = "drop"
+  theme(
+    legend.position  = "top",
+    panel.grid.minor = element_blank()
   )
-
-# (Optional) require minimum sample size per cell, e.g. 50
-# urate_men_child_by_age <- urate_men_child_by_age %>% filter(labour_force >= 50)
-
-# Plot: two trend lines for men (Has vs No children)
-ggplot(urate_men_child_by_age,
-       aes(x = Age, y = urate, color = ChildStatus, group = ChildStatus)) +
-  geom_line(linewidth = 1) +
-  geom_point(size = 2) +
-  scale_color_manual(values = c("No children" = "#00BFC4", "Has children" = "#C77CFF")) +
-  scale_y_continuous(labels = percent_format(accuracy = 0.1), limits = c(0, NA)) +
-  labs(
-    title = "Unemployment rate among men by age and children status",
-    subtitle = "Rate = Unemployed / (Employed + Unemployed) within each age group",
-    x = "Age group",
-    y = "Unemployment rate",
-    color = NULL
-  ) +
-  theme_minimal(base_size = 12) +
-  theme(legend.position = "top")
-
 ```
+
+
 

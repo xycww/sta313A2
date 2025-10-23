@@ -9,16 +9,16 @@ raw <- read_parquet("./data/00-raw_data/raw_census_data.parquet")
 clean_unemp <- raw %>%
   select(AGEGRP, Gender, LFACT, PKIDS) %>%
   filter(
-    AGEGRP %in% 9:16,       # 25–29 ... 60–64
+    AGEGRP %in% 7:16,       # 25–29 ... 60–64
     !LFACT %in% c(88, 99),  # valid labour-force codes
     !PKIDS %in% c(8, 9)     # drop unknown PKIDS if present
   ) %>%
   mutate(
     # tidy labels
     Age = recode(as.character(AGEGRP),
-                 `9`="25–29", `10`="30–34", `11`="35–39", `12`="40–44",
+                 `7` = "18–19", `8` = "20–24", `9`="25–29", `10`="30–34", `11`="35–39", `12`="40–44",
                  `13`="45–49", `14`="50–54", `15`="55–59", `16`="60–64") |>
-      factor(levels = c("25–29","30–34","35–39","40–44","45–49","50–54","55–59","60–64")),
+      factor(levels = c("18–19", "20–24", "25–29","30–34","35–39","40–44","45–49","50–54","55–59","60–64")),
     Gender = recode(as.character(Gender), `1`="Women", `2`="Men"),
     # employment buckets from LFACT
     Employment_status = case_when(
