@@ -167,7 +167,7 @@ ggplot(edu_gap, aes(x = gap_pct, y = Edu3, fill = Edu3)) +
     title   = "How does education level effect gender pay gap?",
     x       = "Gap percentage",
     y       = NULL,
-    caption = "Figure 2: the gender pay gap by education level. Although gap exist in all education level, it is largest among those \nwith non-degree postsecondary credentials (25.3%) and smallest among those with a bachelor’s degree or \nhigher (16.8%)."
+    caption = "Figure 2: the gender pay gap by education level. Although gap exist in all education level, it is largest among \nthose with non-degree postsecondary credentials (25.3%) and smallest among those with a bachelor’s \ndegree or higher (16.8%)."
   ) +
   theme_minimal(base_size = 12) +
   theme(
@@ -185,7 +185,7 @@ ggplot(edu_gap, aes(x = gap_pct, y = Edu3, fill = Edu3)) +
   )
 
 ```
-If education and occupation cannot fully explain the difference, what does?  The answer might be found in a more personal and common moment ---- childbirth.
+If education and occupation cannot fully explain the difference, what does? The answer might be found in a more personal and common moment ---- childbirth.
 
 # Turning point at age 30
 When plotting the wage gap between men and women across age, a distinct pattern appears. 
@@ -260,7 +260,7 @@ p_2021 <- ggplot(gap_age, aes(Age, gap_pct, group = 1)) +
     title = "The Turning Point: How the Gender Pay Gap \nExpands Around the Childbearing Years",
     x = "Age group",
     y = "Gap percentage",
-    caption = "Figure 3: the gender pay gap by age for full-time, full-year workers in Canada(2021). The gap narrows in the \nearly 20s, then rises sharply from 25–30 and continues to increase steadily thereafter."
+    caption = "Figure 3: the gender pay gap by age for full-time, full-year workers in Canada(2021). The gap \n narrows in the early 20s, then rises sharply from 25–30 and continues to increase steadily thereafter."
     
   ) +
   theme_minimal(base_size = 12) +
@@ -454,7 +454,7 @@ ggplot(urate_women_age, aes(x = Age, y = urate, color = ChildStatus, group = Chi
   scale_y_continuous(labels = percent_format(accuracy = 0.1), limits = c(0, NA)) +
   labs(
     title = "How Parenthood Shapes Women’s Employment \nAcross Age Groups?",
-    caption = "Figure 5: Compares unemployment rates among women with and without children across age groups. Women with \nchildren face higher unemployment rates, particularly between ages 25 and 45 — the main childbearing and \ncaregiving years.",
+    caption = "Figure 5: Compares unemployment rates among women with and without children across age groups. \nWomen with children face higher unemployment rates, particularly between ages 25 and 45 — the main \nchildbearing and caregiving years.",
     x = "Age group", y = "Unemployment rate", color = NULL
   ) +
   theme_minimal(base_size = 12) +
@@ -503,7 +503,7 @@ ggplot(age_gender_rate,
   scale_y_continuous(labels = percent_format(accuracy = 0.1), limits = c(0, NA)) +
   labs(
     title = "Gender Differences in Employment Across Age Groups",
-    caption = "Figure 6: compares the unemployment rate for men and women across different age groups. Men and women have \nsimilar unemployment patterns at younger and older ages, but between ages 30 and 40, women face higher \nunemployment rates, corresponding to the main childbearing years.",
+    caption = "Figure 6: compares the unemployment rate for men and women across different age groups. Men and women \nhave similar unemployment patterns at younger and older ages, but between ages 30 and 40, women \nface higher unemployment rates, corresponding to the main childbearing years.",
     x = "Age group",
     y = "Unemployment rate",
     color = NULL
