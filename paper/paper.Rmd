@@ -185,7 +185,7 @@ ggplot(edu_gap, aes(x = gap_pct, y = Edu3, fill = Edu3)) +
   )
 
 ```
-If education and occupation cannot fully explain the difference, what does? The answer might be found in a more personal and common moment ---- childbirth.
+If education and occupation cannot fully explain the difference, what does? The answer might be found in a more personal and common moment -- childbirth.
 
 # Turning point at age 30
 When plotting the wage gap between men and women across age, a distinct pattern appears. 
@@ -287,7 +287,7 @@ As shown in Figure 3, the gender pay gap narrows during the early stages of work
 It is also important to recognize that childbirth affects women not only through changes in wages, but also through changes in labour participation itself. After becoming mothers, some women temporarily or permanently leave the workforce to take on domestic and caregiving responsibilities. These women are often classified as “not employed”. Therefore, to fully understand the impact of motherhood on economic inequality, it is necessary to examine both groups, women who remain in paid employment and women who exit the labour market after childbirth. By considering both wage differences among working women and unemployment patterns related to family responsibilities, it can capture a more complete picture of how motherhood affects the outcomes of women's career and economies.
 
 # Parenthood’s Unequal Impact on Men’s and Women’s Careers 
-Among employed individuals, the gender gap in earnings widens sharply after parenthood. As shown in Figure 4., among workers without children, women earn about 13% less than men, but after having children, the gap expands to roughly 21%. This pattern suggests that while a gender pay gap already exists before parenthood, it becomes substantially larger once children enter the picture, which suggests that having children can exacerbate pay inequality in the workplace.
+Among employed individuals, the gender gap in earnings widens sharply after parenthood. As shown in Figure 4., among workers without children, women earn about 14% less than men, but after having children, the gap expands to roughly 22%. This pattern suggests that while a gender pay gap already exists before parenthood, it becomes substantially larger once children enter the picture, which suggests that having children can exacerbate pay inequality in the workplace.
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=7, fig.height=5}
 # --- Parent premium/penalty on a single number line --------------------------
