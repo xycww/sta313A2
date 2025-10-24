@@ -1,6 +1,6 @@
 ---
-title: "How parenthood shapes the gender wage gap"
-subtitle: "Relative to men without children (ages 25–44)"
+title: "The Motherhood Penalty: Why Gender Equality at Work Still Eludes Canada"
+subtitle: "An analysis of how childbirth reshapes women’s earnings, employment, and opportunity"
 author:
   - "Sakura Hu"
   - "Zhanyi Wang"
@@ -27,12 +27,11 @@ library(grid)
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 data <- read_parquet("./data/01-cleaned_data/cleaned_census_data.parquet")
 ```
-# Gender inequality still exist
-test reference[@one]and[@two]and[@three]and[@four]and[@five]and[@six]!
-In recent years, in order to address problems such as gender discrimination and the undervaluation of women’s work, many countries and regions promote equal pay for work of equal value and the economic empowerment of females. (1. ) As one of these regions, Canada has made continuous progress in addressing gender inequality in employment, but the pay gap remains stubbornly persistent. Women with full-time jobs still earn significantly less than men on average, and this gap is even wider for Indigenous women, women of colour, women with disabilities, and others who face systemic and intersectional barriers.(2. ) In this context, an important question arises: Why does the gender pay gap persist even after policies like equal pay for equal work have been implemented? Education and occupation are often cited as explanations, but the data tells a more complex story, which lies at the crossroads of work, gender, and motherhood.
+# Persistent Gender Inequality in the Labour Market 
+In recent years, in order to address problems such as gender discrimination and the undervaluation of women’s work, many countries and regions promote equal pay for work of equal value and the economic empowerment of females[@one]. As one of these regions, Canada has made continuous progress in addressing gender inequality in employment, but the pay gap remains stubbornly persistent. Women with full-time jobs still earn significantly less than men on average, and this gap is even wider for Indigenous women, women of colour, women with disabilities, and others who face systemic and intersectional barriers[@two]. In this context, an important question arises: Why does the gender pay gap persist even after policies like equal pay for equal work have been implemented? Education and occupation are often cited as explanations, but the data tells a more complex story, which relates the wage, gender, and motherhood.
 
-# Educational disparities are not enough to explain the problem:
-A common hypothesis attributes wage differences to education and occupation gaps. In general, higher education means a greater chance of entering occupations with higher average salaries(3.), so if most women choose to work early instead of continuing to obtain higher education, they may lose the opportunity to access high-paying occupations. However, this explanation no longer holds. In fact, women are more likely than men to pursue postsecondary studies, and they represent the majority of bachelor’s degree, college certificate and diploma holders(4.).In addition, across all education levels and occupations, women’s earnings are always lower than men’s. At the same level of education, the wage gap exceeds 15%, and even within the same occupation, the smallest gap between men and women is still about 9.1%. Although higher education and occupational choices may help narrow the gender pay gap, it never fully disappears.
+# Education and Occupation Alone Are Not Enough To Explain the Wage Gap 
+A common hypothesis attributes wage differences to education and occupation gaps. In general, higher education means a greater chance of entering occupations with higher average salaries[@three], so if most women choose to work early instead of continuing to obtain higher education, they may lose the opportunity to access high-paying occupations. However, this explanation no longer holds. In fact, women are more likely than men to pursue postsecondary studies, and they represent the majority of bachelor’s degree, college certificate and diploma holders[@four]. In addition, across all education levels and occupations, women’s earnings are always lower than men’s. Figure 1 shows that the gender pay gap varies widely by industry, ranging from 9.1% in Utilities to 30% in Finance and Insurance. Sectors such as Professional, Scientific and Technical Services (28%) and Agriculture, Forestry, Fishing and Hunting (26.2%) also exhibit large disparities, indicating that gender inequality persists even in high-skilled and specialized occupations. Figure 2 illustrates the gender pay gap by education level. While the gap narrows with higher education, it does not disappear. Women with a bachelor’s degree or higher still earn about 16.8% less than men, and the largest gap—25.3%—occurs among those with non-degree postsecondary credentials. These results suggest that although higher education and occupational advancement can reduce the gender wage gap, they are insufficient to eliminate it entirely.
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=7, fig.height=5}
 # gap by occupation
@@ -107,10 +106,10 @@ p_naics <- ggplot(naics_gap, aes(
   scale_y_continuous(labels = percent_format(accuracy = 1), expand = expansion(mult = c(0.02, 0.12))) +
   scale_fill_manual(name = "Gap size", values = pal) +
   labs(
-    title   = "Gender pay gap by industry(gai)",
+    title   = "How does gender pay gap differ by industy?",
     x       = NULL,
     y       = "Gap percentage",
-    caption = "Figure shows the gender pay gap by industry for full-time, full-year workers.Gaps exist across all sectors, ranging roughly \nfrom 9% to 30%. Finance & insurance is among the highest."
+    caption = "Figure 1: the gender pay gap by industry for full-time, full-year workers. Gaps exist across all sectors, ranging \nroughly from 9% to 30%. Finance & insurance is among the highest."
   ) +
   theme_minimal(base_size = 12) +
   theme(
@@ -118,7 +117,12 @@ p_naics <- ggplot(naics_gap, aes(
     plot.title.position = "plot",
     plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),
     plot.caption.position = "plot",
-    plot.caption        = element_text(hjust = 0)
+    plot.caption = element_text(
+      size = 9.5,
+      colour = "#5a5a5a",
+      hjust = 0,
+      margin = margin(t = 10)
+    )
   )
 
 p_naics
@@ -160,10 +164,10 @@ ggplot(edu_gap, aes(x = gap_pct, y = Edu3, fill = Edu3)) +
   scale_x_continuous(labels = percent_format(accuracy = 1), expand = expansion(mult = c(0.02, 0.12))) +
   scale_fill_manual(values = edu_cols, name = "Education") +
   labs(
-    title   = "Gender pay gap by education level",
+    title   = "How does education level effect gender pay gap?",
     x       = "Gap percentage",
     y       = NULL,
-    caption = "Figure shows the gender pay gap by education level. The gap is largest among those with non-degree postsecondary \ncredentials (25.3%) and smallest among those with a bachelor’s degree or higher (16.8%)."
+    caption = "Figure 2: the gender pay gap by education level. Although gap exist in all education level, it is largest among those \nwith non-degree postsecondary credentials (25.3%) and smallest among those with a bachelor’s degree or \nhigher (16.8%)."
   ) +
   theme_minimal(base_size = 12) +
   theme(
@@ -172,15 +176,19 @@ ggplot(edu_gap, aes(x = gap_pct, y = Edu3, fill = Edu3)) +
     plot.title.position = "plot",
     plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),
     plot.caption.position = "plot",
-    plot.caption        = element_text(hjust = 0)
+    plot.caption = element_text(
+      size = 9.5,
+      colour = "#5a5a5a",
+      hjust = 0,
+      margin = margin(t = 10)
+    )
   )
 
 ```
-If education cannot fully explain the difference, what does? To find out, the answer may lie in a more personal yet universal moment, childbirth.
+If education and occupation cannot fully explain the difference, what does?  The answer might be found in a more personal and common moment ---- childbirth.
 
-# Turning point at age 30:
-When plotting the wage gap between men and women across age, a distinct pattern begins to appear.
-
+# Turning point at age 30
+When plotting the wage gap between men and women across age, a distinct pattern appears. 
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=7, fig.height=5}
 #2021 gap by age
@@ -249,10 +257,10 @@ p_2021 <- ggplot(gap_age, aes(Age, gap_pct, group = 1)) +
     labels = scales::label_percent(accuracy = 1)
   ) +
   labs(
-    title = "Canada’s gender pay gap by age (2021)",
+    title = "The Turning Point: How the Gender Pay Gap \nExpands Around the Childbearing Years",
     x = "Age group",
     y = "Gap percentage",
-    caption = "Figure shows the gender pay gap by age for full-time, full-year workers. The gap narrows in the \nearly 20s, then rises sharply from 25–30 and continues to increase steadily thereafter."
+    caption = "Figure 3: the gender pay gap by age for full-time, full-year workers in Canada(2021). The gap narrows in the \nearly 20s, then rises sharply from 25–30 and continues to increase steadily thereafter."
     
   ) +
   theme_minimal(base_size = 12) +
@@ -274,20 +282,12 @@ p_2021
 
 ```
 
-Before age 30, the pay gap between men and women narrows rapidly as both gain experience and move up early in their careers. However, after 30, this trend reverses, the gap begins to widen steadily with age. Coincidentally, age 30 also corresponds to Canada’s average maternal age for first-time mothers. This turning point might suggest that while early career growth helps women catch up to men in earnings, the onset of motherhood often marks a shift. The data seem to tell a familiar story, after becoming mothers, women usually shift the focus of their lives to their children and family, thus losing some opportunities for promotion or salary increase.
+As shown in Figure 3, the gender pay gap narrows during the early stages of workers’ careers, reaching its smallest point around ages 25–29. However, immediately after age 30, the gap begins to widen sharply and continues to increase steadily thereafter. Notably, this turning point aligns closely with the average maternal age in Canada. This suggests that the transition into parenthood may be a key factor influencing women’s income trajectories. Rather than reflecting a lack of skill or ambition, the widening gap likely results from structural and social factors—such as career interruptions, reduced working hours, or employer biases—that disproportionately affect women once they become mothers. After becoming mothers, many women also tend to shift part of their focus toward childcare and family responsibilities, which may further reduce their opportunities for promotion or salary growth.
 
 It is also important to recognize that childbirth affects women not only through changes in wages, but also through changes in labour participation itself. After becoming mothers, some women temporarily or permanently leave the workforce to take on domestic and caregiving responsibilities. These women are often classified as “not employed”. Therefore, to fully understand the impact of motherhood on economic inequality, it is necessary to examine both groups, women who remain in paid employment and women who exit the labour market after childbirth. By considering both wage differences among working women and unemployment patterns related to family responsibilities, it can capture a more complete picture of how motherhood affects the outcomes of women's career and economies.
 
-# Implications for career women: 
-Among employed individuals, the gender gap in earnings widens sharply after parenthood. As shown in Figure, among workers without children, women earn about 13% less than men, but after having children, the gap expands to roughly 21%. This pattern suggests that while a gender pay gap already exists before parenthood, it becomes substantially larger once children enter the picture, which suggests that having children can exacerbate pay inequality in the workplace.
-
-Furthermore, the impact of having children on earnings moves in opposite directions for men and women. Men with children earn about 7% more than men without children, as many employers tend to view fathers as more stable, responsible, and committed. These qualities can translate into higher pay and faster promotions(5.).
-
-In contrast with men, women without children earn about 13% less than men without children, but after having children, women earn around 15% less. The increasing wage gap after having a child may reflect cultural biases toward mothers, which to be seen as a good mother they are expected to prioritize family over career, but to be viewed as a “Good leader,” they must do the opposite. Under such contradiction, many mothers deviate from traditional career paths by reducing their working hours or leaving the workforce indefinitely, all of which negatively affects their chances of career advancement. The starkly different career situations of women and men after having children illustrate that gender stereotypes and unfairness in the workplace still exist, exacerbating the gender wage gap.
-
-# Unemployment due to childbirth:
-While the gender pay gap widens around the mean maternal age, the impact of childbirth is also reflected in women’s unemployment patterns. The first figure compares unemployment rates among women with and without children. The dark red line shows that women with children consistently face higher unemployment rates, particularly between ages 25 and 45. This is because, in addition to childbirth, women in this age group are more likely to take on caregiving responsibilities for children under the age of 15 (6). In contrast, women without children experience a much sharper decline in unemployment after their early twenties and maintain relatively stable employment throughout midlife.
-
+# Parenthood’s Unequal Impact on Men’s and Women’s Careers 
+Among employed individuals, the gender gap in earnings widens sharply after parenthood. As shown in Figure 4., among workers without children, women earn about 13% less than men, but after having children, the gap expands to roughly 21%. This pattern suggests that while a gender pay gap already exists before parenthood, it becomes substantially larger once children enter the picture, which suggests that having children can exacerbate pay inequality in the workplace.
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=7, fig.height=5}
 # --- Parent premium/penalty on a single number line --------------------------
@@ -395,8 +395,8 @@ ggplot() +
                      breaks = seq(-0.2, 0.2, by = 0.1)) +
   coord_cartesian(xlim = c(x_left, x_right), ylim = c(-0.26, 0.28), clip = "off") +
   labs(
-    title = "How parenthood shapes the gender wage gap relative to men without children\n(ages 25–44)",
-    caption = "Top line: wage gaps for men (with vs. without children); bottom line: wage gaps for women relative to men without \nchildren. Parenthood is associated with a wage premium for men and a pronounced penalty for women—largest \nfor women with children.",
+    title = "How Having Children Alters Earnings for Men and Women?",
+    caption = "Figure 4: Wage differences by parenthood status for men and women aged 25–44, relative to men \nwithout children. Men with children earn about 6.9% more than men without children, while women \nwith children earn about 15.3% less. This results in an overall gender wage gap of 22.2% among \nparents, and 13.9% among non-parents.",
     x = NULL, y = NULL
   ) +
   theme_minimal(base_size = 13) +
@@ -407,23 +407,77 @@ ggplot() +
     plot.title      = element_text(face = "bold"),
     plot.subtitle   = element_text(size = 10.2),
     plot.caption.position = "plot",
-    plot.caption = element_text(hjust = 0),
+    plot.caption = element_text(
+      size = 9.5,
+      colour = "#5a5a5a",
+      hjust = 0,
+      margin = margin(t = 10)
+    )
   )
-
 
 ```
 
+Furthermore, the impact of having children on earnings moves in opposite directions for men and women. Men with children earn about 7% more than men without children, as many employers tend to view fathers as more stable, responsible, and committed. These qualities can translate into higher pay and faster promotions[@five].
+
+In contrast with men, women without children earn about 14% less than men without children, but after having children, women earn around 15% less. The increasing wage gap after having a child may reflect cultural biases toward mothers, which to be seen as a good mother they are expected to prioritize family over career, but to be viewed as a “Good leader,” they must do the opposite. Under such contradiction, many mothers deviate from traditional career paths by reducing their working hours or leaving the workforce indefinitely, all of which negatively affects their chances of career advancement[@eight]. The starkly different career situations of women and men after having children illustrate that gender stereotypes and unfairness in the workplace still exist, exacerbating the gender wage gap.
+
+# Childbirth and Women’s Employment Patterns
+While the gender pay gap widens around the mean maternal age, the impact of childbirth is also reflected in women’s unemployment patterns. As shown in Figure 5, women with children consistently face higher unemployment rates than women without children across all age groups, particularly between ages 25 and 45. This is because, in addition to childbirth, women in this age group are more likely to take on caregiving responsibilities for children under the age of 15 [@six]. In contrast, women without children experience a much sharper decline in unemployment after their early twenties and maintain relatively stable employment throughout midlife.
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 another <- read_parquet("./data/01-cleaned_data/cleaned_unemployment_data.parquet")
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=7, fig.height=5}
-library(tidyverse)
-library(scales)
-library(tidyverse)
-library(scales)
 
+```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=7, fig.height=5}
+
+lf_women <- another %>%
+  filter(Gender == "Women",
+         Employment_status %in% c("Employed","Unemployed"),
+         !is.na(ChildStatus))
+
+# Unemployment rate by Age × ChildStatus
+urate_women_age <- lf_women %>%
+  group_by(Age, ChildStatus) %>%
+  summarise(
+    labour = n(),
+    urate  = mean(Unemployed, na.rm = TRUE),   # Unemployed / (Employed + Unemployed)
+    .groups = "drop"
+  )
+
+# Plot: Has children = red, No children = pink
+ggplot(urate_women_age, aes(x = Age, y = urate, color = ChildStatus, group = ChildStatus)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  scale_color_manual(values = c("Has children" = "#E53935",  # red
+                                "No children" = "#F48FB1")) + # pink  ← plus goes here
+  scale_y_continuous(labels = percent_format(accuracy = 0.1), limits = c(0, NA)) +
+  labs(
+    title = "How Parenthood Shapes Women’s Employment \nAcross Age Groups?",
+    caption = "Figure 5: Compares unemployment rates among women with and without children across age groups. Women with \nchildren face higher unemployment rates, particularly between ages 25 and 45 — the main childbearing and \ncaregiving years.",
+    x = "Age group", y = "Unemployment rate", color = NULL
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    legend.position  = "top",
+    panel.grid.minor = element_blank(),
+    plot.title      = element_text(face = "bold"),
+    plot.subtitle   = element_text(size = 10.2),
+    plot.caption.position = "plot",
+    plot.caption = element_text(
+      size = 9.5,
+      colour = "#5a5a5a",
+      hjust = 0,
+      margin = margin(t = 10)
+    )
+  )
+```
+
+This pattern suggests that childbirth can interrupt women’s participation in the labour market. Many women temporarily leave their jobs or reduce their working hours to care for children, and re-entering the workforce often means facing less favorable job conditions.
+
+When viewed alongside Figure 6, which compares unemployment patterns between men and women, the impact of gender and parenthood becomes even clearer. Although men and women show similar unemployment rates at younger and older ages, the gap between male and female unemployment widens noticeably between ages 29 and 40, which corresponds to the main childbirth and childrearing periods. This pattern indicates that age and gender do not operate independently, and the effect of gender on unemployment becomes much stronger during the childrearing years. In other words, women experience a temporary rise in unemployment precisely when family responsibilities are most demanding, while men’s employment remains relatively stable across all ages.
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=7, fig.height=5}
 ## 1) Prep from `another`
 lf <- another %>%
   # keep only the labour force rows (your file is already filtered, but this is harmless)
@@ -448,8 +502,8 @@ ggplot(age_gender_rate,
   scale_color_manual(values = c("Men" = "#4F83FF", "Women" = "#E15759")) +
   scale_y_continuous(labels = percent_format(accuracy = 0.1), limits = c(0, NA)) +
   labs(
-    title = "Unemployment rate by age",
-    subtitle = "Among the labour force (employed + unemployed), ages 25–64",
+    title = "Gender Differences in Employment Across Age Groups",
+    caption = "Figure 6: compares the unemployment rate for men and women across different age groups. Men and women have \nsimilar unemployment patterns at younger and older ages, but between ages 30 and 40, women face higher \nunemployment rates, corresponding to the main childbearing years.",
     x = "Age group",
     y = "Unemployment rate",
     color = NULL
@@ -457,54 +511,31 @@ ggplot(age_gender_rate,
   theme_minimal(base_size = 12) +
   theme(
     legend.position   = "top",
-    panel.grid.minor  = element_blank()
+    panel.grid.minor  = element_blank(),
+    plot.title      = element_text(face = "bold"),
+    plot.subtitle   = element_text(size = 10.2),
+    plot.caption.position = "plot",
+    plot.caption = element_text(
+      size = 9.5,
+      colour = "#5a5a5a",
+      hjust = 0,
+      margin = margin(t = 10)
+    )
   )
 
 ```
 
+# Limitations and Future Research Directions
+Despite extensive analysis and research, the article still has certain limitations. For example, when considering women’s employment status, only full-time and unemployed women were included, but many women engage in part-time work after childbirth, which was not considered in the study.Moreover, since the data come from census results, outcomes such as unemployment rates are influenced by more than just childbirth. Other social and economic factors that were not included in the study may also affect the results. For instance, an economic downturn or slow growth can lead to higher unemployment rates, which may disproportionately impact certain industries or regions[@seven]. In such cases, the observed differences between men’s and women’s employment might reflect broader economic conditions rather than the direct effect of childbirth. In addition, some women may face anticipatory discrimination during childbearing age even if they do not have children, because employers expect future maternity leave or reduced commitment. These unobserved factors can affect wages and employment independently of actual childbirth and may create gaps between the findings and real conditions.
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=7, fig.height=5}
-library(tidyverse)
-library(scales)
+In order to solve the impact of the above limitations, more data can be associated in future research. First, employment data can be combined with census data to include part-time women workers. This would help show a complete picture of women’s work patterns after having children. Then, the stratified analysis can also be applied to look at the proportion of women in senior and management positions and the pay gap. This approach can help identify whether gender inequality becomes more pronounced at higher career levels. It can also reveal if women face barriers to promotion or slower wage growth compared to men in similar positions. Including these methods and data can make the research results more realistic.
 
-# Expecting clean_unemp with columns:
-# Age (factor), Gender ("Women"/"Men"), Employment_status, Unemployed (logical), ChildStatus ("Has children"/"No children")
-# If you loaded it as `another`, just do: clean_unemp <- another
+By addressing these research gaps, future studies can provide stronger evidence for policymaking. Based on the current findings, some practical social actions can also be taken to reduce gender inequality in the workplace. For example, flexible and family-friendly work options, such as hybrid work, remote work, and part-time leadership jobs, can help parents balance work and family without losing chances for promotion. More affordable and high-quality childcare services would also help women stay in or return to full-time jobs after having children. The government can support this by giving more funding and subsidies to childcare programs.
 
-# Keep women in the labour force (your file already filtered to InLF, but this is harmless)
-lf_women <- another %>%
-  filter(Gender == "Women",
-         Employment_status %in% c("Employed","Unemployed"),
-         !is.na(ChildStatus))
+# Rethinking Equality Beyond Pay
+In today’s workforce, education, ambition, and skill are no longer the main differences between men and women. The change usually happens around age 30, which is the age many people become parents. The career gap between men and women, which narrows in the early stages of their careers, widens again as family responsibilities increase.
 
-# Unemployment rate by Age × ChildStatus
-urate_women_age <- lf_women %>%
-  group_by(Age, ChildStatus) %>%
-  summarise(
-    labour = n(),
-    urate  = mean(Unemployed, na.rm = TRUE),   # Unemployed / (Employed + Unemployed)
-    .groups = "drop"
-  )
-
-# Plot: Has children = red, No children = pink
-ggplot(urate_women_age, aes(x = Age, y = urate, color = ChildStatus, group = ChildStatus)) +
-  geom_line(linewidth = 1) +
-  geom_point(size = 2) +
-  scale_color_manual(values = c("Has children" = "#E53935",  # red
-                                "No children" = "#F48FB1")) + # pink  ← plus goes here
-  scale_y_continuous(labels = percent_format(accuracy = 0.1), limits = c(0, NA)) +
-  labs(
-    title = "Unemployment rate by age among women: with vs. without children",
-    subtitle = "Rate = Unemployed / (Employed + Unemployed) within each age group",
-    x = "Age group", y = "Unemployment rate", color = NULL
-  ) +
-  theme_minimal(base_size = 12) +
-  theme(
-    legend.position  = "top",
-    panel.grid.minor = element_blank()
-  )
-```
-
+Thus, the gender pay gap is not merely an economic measure; it reflects deeper societal attitudes toward the division of labour at home and at work. Closing this gap requires more than equal pay legislation — it demands structural changes that address the employment inequalities women face due to childbirth, caregiving, and related constraints. Only by fostering a truly supportive and inclusive work environment can we move closer to genuine gender equality.
 
 \newpage
 
